@@ -1,5 +1,5 @@
 # Create the managementnet network
-  resource "google_compute_network" "managementnet" {
+resource "google_compute_network" "managementnet" {
   name = "managementent"
   auto_create_subnetworks = "false"
 }
