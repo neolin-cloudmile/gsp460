@@ -1,0 +1,99 @@
+##Configure mynetwork
+## Create a new configuration and define mynetwork.
+
+1. Name the new file mynetwork.tf in the tfnet folder, and then open it.
+
+cd tfnet
+vi mynetwork.tf
+
+2. Copy the following code into mynetwork.tf:
+
+# Create the mynetwork network
+resource "google_compute_network" "mynetwork" {
+  name                    = "mynetwork"
+  #RESOURCE properties go here
+}
+
+3. Add the following property to mynetwork.tf:
+
+auto_create_subnetworks = "true"
+
+4. Verify that mynetwork.tf looks like this:
+
+# Create the mynetwork network
+resource "google_compute_network" "mynetwork" {
+  name                    = "mynetwork"
+  auto_create_subnetworks = true
+}
+
+##Configure the firewall rule
+## Define a firewall rule to allow HTTP, SSH, and RDP traffic on mynetwork.
+
+1. Add the firewall resource to mynetwork.tf:
+
+# Create a firewall rule to allow HTTP, SSH, RDP and ICMP traffic on mynetwork
+resource "google_compute_firewall" "mynetwork_allow_http_ssh_rdp_icmp" {
+  name    = "mynetwork-allow-http-ssh-rdp-icmp"
+  network = "${google_compute_network.mynetwork.self_link}"
+  allow {
+      protocol = "tcp"
+      ports    = ["22", "80", "3389"] 
+  }
+  allow {
+    protocol = "icmp"
+  }
+}
+
+##Configure the VM instance
+## Use the instance module to configure mynetwork-us-vm and mynetwork-eu-vm.
+
+1. Add the following VM instances to mynetwork.tf:
+
+# Create the mynet-us-vm instance
+module "mynet-us-vm" {
+  source           = "./instance"
+  instance_name    = "mynet-us-vm"
+  instance_zone    = "us-central1-a"
+  instance_subnetwork = "${google_compute_network.mynetwork.self_link}"
+}
+
+# Create the mynet-eu-vm" instance
+module "mynet-eu-vm" {
+  source           = "./instance"
+  instance_name    = "mynet-eu-vm"
+  instance_zone    = "europe-west1-d"
+  instance_subnetwork = "${google_compute_network.mynetwork.self_link}"
+}
+
+##Create mynewtork and its resource
+## It's time to apply the mynetwork configuration.
+
+1. Rewrite the Terraform configurations files to a canonical format and style by running the following command:
+
+terraform fmt
+
+2. Initialize Terraform by running the following command:
+
+terraform init
+
+3. Create an execution plan by running the following command:
+
+terraform plan
+
+4. Apply the desired changes by running the following command:
+
+terraform apply
+
+5. Confirm the planned actions by typing:
+
+yes
+
+##Verify mynetwork and its resources
+## In the GCP Console, verify that the resources were created.
+
+1. In the GCP Console, select Navigation menu > VPC network > VPC networks. View the mynetwork VPC network with its subnetworks.
+2. In the left pane, click Firewall Rules. View the mynetwork-allow-http-ssh-rdp-icmp firewall rule for the VPC network that was created.
+3. Select Navigation menu > Compute Engine > VM instances. View the mynet-us-vm and mynet-eu-vm instances.
+4. Note the internal IP addresses for mynet-eu-vm.
+5. For mynet-us-vm, click SSH to launch a terminal and connect.
+6. To test connectivity to mynet-eu-vm's internal IP address, run the following command in the SSH terminal (replacing mynet-eu-vm's internal IP address with the value noted earlier)

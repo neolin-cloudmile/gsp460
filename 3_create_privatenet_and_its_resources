@@ -1,0 +1,100 @@
+##Configure privatenet
+## Create a new configuration and define privatenet.
+
+1. Name the new file privatenet.tf in the tfnet folder, and then open it:
+
+cd tfnet
+vi privatenet.tf
+
+2. Add the VPC network by copying the following code into privatenet.tf:
+
+# Create privatenet network
+resource "google_compute_network" "privatenet" {
+  name                    = "privatenet"
+  auto_create_subnetworks = false
+}
+
+3. Add the privatesubnet-us subnet resource to privatenet.tf:
+
+# Create privatesubnet-us subnetwork
+resource "google_compute_subnetwork" "privatesubnet-us" {
+  name          = "privatesubnet-us"
+  region        = "us-central1"
+  network       = "${google_compute_network.privatenet.self_link}"
+  ip_cidr_range = "172.16.0.0/24"
+}
+
+4. Add the privatesubnet-eu subnet resource to privatenet.tf:
+
+# Create privatesubnet-eu subnetwork
+resource "google_compute_subnetwork" "privatesubnet-eu" {
+  name          = "privatesubnet-eu"
+  region        = "europe-west1"
+  network       = "${google_compute_network.privatenet.self_link}"
+  ip_cidr_range = "172.20.0.0/24"
+}
+
+##Configure the fire rule
+## Define a firewall rule to allow HTTP, SSH, and RDP traffic on privatenet.
+
+1. Add the firewall resource to privatenet.tf:
+
+# Create a firewall rule to allow HTTP, SSH, RDP and ICMP traffic on privatenet
+resource "google_compute_firewall" "privatenet-allow-http-ssh-rdp-icmp" {
+  name    = "privatenet-allow-http-ssh-rdp-icmp"
+  network = "${google_compute_network.privatenet.self_link}"
+  allow {
+      protocol = "tcp"
+      ports    = ["22", "80", "3389"]
+  }
+  allow {
+      protocol = "icmp"
+  }  
+}
+
+##Configure the VM instance
+## Use the instance module to configure privatenet-us-vm.
+
+1. Add the VM instance resource to privatenet.tf:
+
+# Add the privatenet-us-vm instance
+module "privatenet-us-vm" {
+  source           = "./instance"
+  instance_name    = "privatenet-us-vm"
+  instance_zone    = "us-central1-a"
+  instance_subnetwork = "${google_compute_subnetwork.privatesubnet-us.self_link}"
+}
+
+##Create privatenet and its resources
+## It's time to apply the privatenet configuration.
+
+1. Rewrite the Terraform configurations files to a canonical format and style by running the following command:
+
+terraform fmt
+
+2. Initialize Terraform by running the following command:
+
+terraform init
+
+3. Create an execution plan by running the following command:
+
+terraform plan
+
+4. Apply the desired changes by running the following command:
+
+terraform apply
+
+5. Confirm the planned actions by typing:
+
+yes
+
+##Verify privatenet and its resources
+## In the GCP Console, verify that the resources were created.
+
+1. In the GCP Console, select Navigation menu > VPC network > VPC networks. View the privatenet VPC network with its subnetworks.
+2. In the left pane, click VPC network > Firewall Rules. View the privatenet_allow_http_ssh_rdp_icmp firewall rule for the VPC network that was created.
+3. Select Navigation menu > Compute Engine > VM instances. Note the internal IP addresses for privatenet-us-vm.
+4. For managementnet-us-vm, click SSH to launch a terminal and connect.
+5. To test connectivity to privatenet-us-vm's internal IP address, run the following command in the SSH terminal (replacing privatenet-us-vm's internal IP address with the value noted earlier)
+
+ 
